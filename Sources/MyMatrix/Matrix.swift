@@ -79,7 +79,11 @@ public class Matrix {
         }
         return Matrix(vecs)
     }
-    
+    public func qrDecomposition() throws -> (q:Matrix,r:Matrix) {
+        let q = try self.orthnormal()
+        let r = try q.transpose() * self
+        return (q,r)
+    }
     //extract row or column vector from matrix. if orientation is true -> column vec
     public func vector(_ index:Int,orientation:Bool) -> Vector {
         var flat:[Float] = []
