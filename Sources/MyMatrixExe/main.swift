@@ -1,9 +1,8 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
-
 import Foundation
 import MyMatrix
-
+/*
 func sukkiri(_ a:Matrix)->Matrix {
     let epsilon:Float = 0.00001
     var b:[Float] = []
@@ -44,23 +43,11 @@ let c1:[[Float]] = [
     [0,1,3,2]
 ]
 do {
-    let a2 = try Matrix(randMatrix(4)).orthnormal()
+    let a2 = try randMatrix(4).orthnormal()
     let b2 = a2.transpose()
     let c2 = try b2 * a2
     print(sukkiri(c2).get())
     
-}
-
-func randMatrix(_ rank:Int) -> [[Float]] {
-    var b:[[Float]]=[]
-    for _ in 0..<rank{
-        var a:[Float]=[]
-        for _ in 0..<rank{
-            a.append(Float.random(in:0...1))
-        }
-        b.append(a)
-    }
-    return b
 }
 func makeClear(_ a:Matrix)->Matrix {
     let epsilon:Float = 0.00001
@@ -94,9 +81,9 @@ func compare(_ a: [[Float]],_ b:[[Float]]) -> Bool {
 let checkMatrix1:[[Float]] = [[1,0,0],[0,1,0],[0,0,1]]
 let checkMatrix2:[[Float]] = [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]
 do {
-    let matrix1 = randMatrix(3)
+    let matrix1 = try randMatrix(3)
     print(matrix1)
-    let a1 = try Matrix(matrix1).orthnormal()
+    let a1 = try matrix1.orthnormal()
     let b1 = a1.transpose()
     let c1 = try b1 * a1
     print(makeClear(c1).get())
@@ -106,9 +93,9 @@ do {
         print("test is NG")
     }
     
-    let matrix2 = randMatrix(5)
+    let matrix2 = try randMatrix(5)
     print(matrix2)
-    let a2 = try Matrix(matrix2).orthnormal()
+    let a2 = try matrix2.orthnormal()
     let b2 = a2.transpose()
     let c2 = try b2 * a2
     print(makeClear(c2).get())
@@ -118,8 +105,8 @@ do {
         print("test is NG")
     }
 }
-// Check QR decomposition
-let checkMatrix3:[[Float]] = [[0,1,1],[1,0,1],[1,1,0]]
-let m = try Matrix(checkMatrix3).qrDecomposition().r
-print (m)
-        
+*/
+let epsilon:Float = 0.0001
+func printEpsilon() {
+    print (epsilon)
+}

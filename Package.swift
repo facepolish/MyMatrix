@@ -17,5 +17,6 @@ let package = Package(
     targets: [
         .target(name: "MyMatrix"), // ライブラリターゲット
         .executableTarget(name: "MyMatrixExe", dependencies: ["MyMatrix"]), // 実行可能ファイルターゲット (必要であれば)
+        .testTarget(name: "MyMatrixTests", dependencies: ["MyMatrix"]), 
     ]
 )

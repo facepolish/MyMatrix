@@ -8,12 +8,49 @@
 import simd
 import Foundation
 import Accelerate
+let epsilon:Float = 0.0001
 
 enum Errors: Error {
     case MatrixSizeMismatch
     case VectorSizeMismatch
 }
+//typealias Scalar = Float
+//typealias Scalar4x4 = float4x4
+/*
+func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [Double], eigenvectors: [Double])? {
+    var eigenvalueReal = [Double](repeating: 0.0, count: order)
+    var eigenvalueImaginary = [Double](repeating: 0.0, count: order)
+    var eigenvector = [Double](repeating: 0.0, count: order * order)
+    var workspace = [Double](repeating: 0.0, count: 4 * order)
+    var status = Int32(0)
+    var varMatrix = matrix
 
+    withUnsafeMutablePointer(to: &status) { statusPtr in
+        withUnsafeMutablePointer(to: &eigenvalueReal) { eigenvalueRealPtr in
+            withUnsafeMutablePointer(to: &eigenvalueImaginary) { eigenvalueImaginaryPtr in
+                withUnsafeMutablePointer(to: &eigenvector) { eigenvectorPtr in
+                    withUnsafeMutablePointer(to: &workspace) { workspacePtr in
+                        varMatrix.withUnsafeMutableBufferPointer { matrixPtr in
+                            var orderInt32 = Int32(order)
+                            var lda = Int32(order)
+                            var ldvl = Int32(order)
+                            var ldvr = Int32(order)
+
+                            dgeev_(&("N" as NSString).utf8String, &("V" as NSString).utf8String, &orderInt32, matrixPtr.baseAddress, &lda, eigenvalueRealPtr, eigenvalueImaginaryPtr, nil, &ldvl, eigenvectorPtr, &ldvr, workspacePtr, &orderInt32, statusPtr)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if status == 0 {
+        return (eigenvalues: eigenvalueReal, eigenvectors: eigenvector)
+    } else {
+        return nil
+    }
+}
+*/
 func convTo4x4(_ a:[[Float]]) throws -> float4x4 {
     let row = a.count
     let col = a[0].count
@@ -42,7 +79,11 @@ public class Matrix {
             }
         }
     }
-    
+    public func get(_ row:Int,_ col:Int) -> Float {
+        let offset = self.col * row + col
+        return self.flat[offset]
+    }
+
     public init(_ a: [Float], row: Int, col: Int) {
         self.flat = a
         self.row = row
@@ -58,6 +99,7 @@ public class Matrix {
             self.col = a.size
         }
     }
+
     public init(_ f:[Vector]){// assume vecgors as col vectors
         let cols = f.count
         let rows = f[0].size
@@ -70,14 +112,15 @@ public class Matrix {
     }
     public func orthnormal() throws -> Matrix {
         var vecs:[Vector] = []
-        for i in 0..<self.col {
+        let count = min(self.col,self.row)
+        for i in 0..<count {
             let vec = self.vector(i, orientation: true)
             var difVec = Vector(0.0,size:vec.size)
             difVec = try vecs.reduce(difVec){try $0 - (try vec*$1) * $1}
             let retVec = try vec + difVec
             vecs.append(retVec.normalize())
         }
-        return Matrix(vecs)
+        return Matrix(vecs) //.transpose()
     }
     public func qrDecomposition() throws -> (q:Matrix,r:Matrix) {
         let q = try self.orthnormal()
@@ -103,7 +146,78 @@ public class Matrix {
         let plus = zip(lhs.flat, rhs.flat).map { $0.0 + $0.1 }
         return Matrix(plus, row: rhs.row, col: rhs.col)
     }
-    
+    private func isNonNegativeMatrix() -> Bool {
+        guard self.col == self.row else {
+            return false
+        }
+        let size = self.row * self.col
+        for i in 0..<size {
+            if self.flat[i] < 0 {
+                return false
+            }
+        }
+        return true
+    }
+    public func mainDiagonal() -> [Float] {
+        var ret:[Float] = []
+        let count = min(self.row,self.col)
+        for i in 0..<count {
+            ret.append(self.get(i,i))
+        }
+        return ret
+    }
+    public func googleVector() throws -> (eigen:Float,eigenVec:Vector) {// If the matrix is no-negative google vector exist
+        guard self.isNonNegativeMatrix() else {
+            throw Errors.MatrixSizeMismatch
+        }
+        let eigens = try self.eigen()
+        var maxVal:Float = 0
+        var maxVec:Vector = eigens.eigenVectors[0]
+        for i in 0..<eigens.eigenValues.count {
+            if eigens.eigenValues[i] > maxVal {
+                maxVal = eigens.eigenValues[i]
+                maxVec = eigens.eigenVectors[i]
+            }
+            
+        }
+        return (maxVal,maxVec)
+    }
+    public func eigen() throws -> (eigenValues:[Float], eigenVectors:[Vector]){
+        guard self.row == self.col else {
+            throw Errors.MatrixSizeMismatch
+        }
+        let epsilon:Float = 0.000001
+        let maxCount = 10000
+        let res = try self.qrDecomposition()
+        var q = res.q
+        var r = res.r
+        var a = try r * q
+        var x = q
+        var lastEigen = a.mainDiagonal()
+        var diff:Float = 0
+        var count = 0
+        repeat {
+            let res = try a.qrDecomposition()
+            q = res.q
+            r = res.r
+            a = try r * q
+            x = try x * q
+            let topEigen = a.mainDiagonal()
+            let diffVec = try Vector(lastEigen) - Vector(topEigen)
+            diff = diffVec.norm()
+//            print ("diff norm is \(diff)")
+            lastEigen = topEigen
+            count += 1
+            if count > maxCount {
+                break
+            }
+        }while(diff > epsilon)
+        var retVectors:[Vector] = []
+        for i in 0..<self.col {
+            retVectors.append(x.vector(i,orientation: true))
+        }
+        return (lastEigen,retVectors)
+    }
     public static func - (lhs: Matrix, rhs: Matrix) throws -> Matrix {
         guard lhs.row == rhs.row && lhs.col == rhs.col else{
             throw Errors.MatrixSizeMismatch
@@ -111,7 +225,21 @@ public class Matrix {
         let minus = zip(lhs.flat, rhs.flat).map { $0.0 - $0.1 }
         return Matrix(minus, row: rhs.row, col: rhs.col)
     }
-
+    public static func * (lhs:Matrix, rhs:Vector) throws -> Vector { // Assume vector as col vector
+        guard lhs.col == rhs.size else {
+            throw Errors.MatrixSizeMismatch
+        }
+        let matt = lhs.get()
+        var flat:[Float] = []
+        for i in 0..<lhs.row {
+            var val:Float = 0
+            for j in 0..<lhs.col {
+                val = val + matt[i][j] * rhs.flat[j]
+            }
+            flat.append(val)
+        }
+        return Vector(flat)
+    }
     public static func * (lhs: Matrix, rhs: Matrix) throws -> Matrix {
         guard lhs.col == rhs.row else{
             throw Errors.MatrixSizeMismatch
@@ -130,7 +258,6 @@ public class Matrix {
         }
         return ret
     }
-
     public func transpose() -> Matrix {
         var trans = [Float](repeating: 0.0, count: self.row * self.col)
         vDSP_mtrans(self.flat, 1, &trans, 1, vDSP_Length(self.col), vDSP_Length(self.row))
