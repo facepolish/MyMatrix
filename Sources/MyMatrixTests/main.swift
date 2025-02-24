@@ -131,33 +131,43 @@ struct Test {
         print("eigen value is " + String(winMatRnd.eigen)   )
         
     }
+    
+    @Test func testEigenFunc() async throws {
+        let winningPoints:[Double] = [-26,31,-11,  -33,42,-15,  -25,23,-4]
+        let matrix: [Double] = [
+            4, 1,
+            1, 3
+        ]
+        let order = 2
+//        let ret = eigenvaluesAndEigenvectors(matrix:matrix,order:order)
+
+        let ret = eigenvaluesAndEigenvectors(matrix:winningPoints,order:3)
+        #expect( ret != nil )
+        print(ret!.eigenvalues)
+    }
+    @Test func testEigen() async throws {
+   //        let winningPoints:[[Float]] = [[1,2,2],[3,1,1],[2,1,2]]
+        let winningPoints:[[Float]] = [[-26,-33,-25],[31,42,23],[-11,-15,-4]]
+        let winMatrix = try Matrix(winningPoints)
+        let eigens = try winMatrix.eigen()
+        let count = eigens.eigenValues.count
+        for i in 0..<count {
+            let vec = eigens.eigenVectors[i]
+            let eigenValue = eigens.eigenValues[i]
+            let newVec = try winMatrix * vec
+            let newVec2 = eigenValue * vec
+            let boolvalue:Bool = try almostEqualVectors(newVec,newVec2)
+            #expect( boolvalue )
+            if !boolvalue {
+                print ("eigen value is \(eigenValue)")
+                print ("eigen vector is \(vec.flat)")
+            }
+        }
+
+    }
+
 }
  
-/*
- let epsilon:Float = 0.0001
- @Test func printEpsilon() async throws {
-     #expect (epsilon != 0)
-     print ("epsilon = \(epsilon)")
- }
- @Test func testEigen() async throws {
-//        let winningPoints:[[Float]] = [[1,2,2],[3,1,1],[2,1,2]]
-     let winningPoints:[[Float]] = [[-26,-33,-25],[31,42,23],[-11,-15,-4]]
-     let winMatrix = try Matrix(winningPoints)
-     let eigens = try winMatrix.eigen()
-     let count = eigens.eigenValues.count
-     for i in 0..<count {
-         let vec = eigens.eigenVectors[i]
-         let eigenValue = eigens.eigenValues[i]
-         let newVec = try winMatrix * vec
-         let newVec2 = eigenValue * vec
-         let boolvalue:Bool = try almostEqualVectors(newVec,newVec2)
-         #expect( boolvalue )
-         if !boolvalue {
-             print ("eigen value is \(eigenValue)")
-             print ("eigen vector is \(vec.flat)")
-         }
-     }
 
- }
 
- */
+ 

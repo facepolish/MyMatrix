@@ -13,44 +13,102 @@ let epsilon:Float = 0.0001
 enum Errors: Error {
     case MatrixSizeMismatch
     case VectorSizeMismatch
+    case NoEigenValues
 }
 //typealias Scalar = Float
 //typealias Scalar4x4 = float4x4
+
 /*
-func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [Double], eigenvectors: [Double])? {
+func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [(real: Double, imag: Double)], eigenvectors: [[Double]])? {
+    guard matrix.count == order * order else { return nil }
+
     var eigenvalueReal = [Double](repeating: 0.0, count: order)
     var eigenvalueImaginary = [Double](repeating: 0.0, count: order)
     var eigenvector = [Double](repeating: 0.0, count: order * order)
-    var workspace = [Double](repeating: 0.0, count: 4 * order)
-    var status = Int32(0)
     var varMatrix = matrix
+    var workspaceQuery = [Double](repeating: 0.0, count: 1)
+    var status = Int32(0)
 
-    withUnsafeMutablePointer(to: &status) { statusPtr in
-        withUnsafeMutablePointer(to: &eigenvalueReal) { eigenvalueRealPtr in
-            withUnsafeMutablePointer(to: &eigenvalueImaginary) { eigenvalueImaginaryPtr in
-                withUnsafeMutablePointer(to: &eigenvector) { eigenvectorPtr in
-                    withUnsafeMutablePointer(to: &workspace) { workspacePtr in
-                        varMatrix.withUnsafeMutableBufferPointer { matrixPtr in
-                            var orderInt32 = Int32(order)
-                            var lda = Int32(order)
-                            var ldvl = Int32(order)
-                            var ldvr = Int32(order)
+    // Workspace query
+    var orderInt32 = Int32(order)
+    var orderInt32_2 = Int32(order)
+    var lda = Int32(order)
+    var ldvr = Int32(order)
+    var lwork = Int32(-1)
+    var N = "N"//Int8("N")//"N"
+    var V = "V"//Int8("V")//"V"
 
-                            dgeev_(&("N" as NSString).utf8String, &("V" as NSString).utf8String, &orderInt32, matrixPtr.baseAddress, &lda, eigenvalueRealPtr, eigenvalueImaginaryPtr, nil, &ldvl, eigenvectorPtr, &ldvr, workspacePtr, &orderInt32, statusPtr)
-                        }
-                    }
-                }
-            }
+    dgeev_(&N, &V, &orderInt32, &varMatrix, &lda, &eigenvalueReal, &eigenvalueImaginary, nil, &orderInt32_2, &eigenvector, &ldvr, &workspaceQuery, &lwork, &status)
+
+    guard status == 0 else { return nil }
+
+    // Actual computation
+    lwork = Int32(workspaceQuery[0])
+    var workspace = [Double](repeating: 0.0, count: Int(lwork))
+
+    dgeev_(&N,&V, &orderInt32, &varMatrix, &lda, &eigenvalueReal, &eigenvalueImaginary, nil, &orderInt32_2, &eigenvector, &ldvr, &workspace, &lwork, &status)
+
+    guard status == 0 else { return nil }
+
+    let eigenvalues = zip(eigenvalueReal, eigenvalueImaginary).map { (real: $0.0, imag: $0.1) }
+    let eigenvectors = stride(from: 0, to: eigenvector.count, by: order).map { Array(eigenvector[$0..<$0+order]) }
+
+    return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
+}
+ */
+func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [(real: Double, imag: Double)], eigenvectors: [[Double]])? {
+    guard matrix.count == order * order else { return nil }
+
+    var eigenvalueReal = [Double](repeating: 0.0, count: order)
+    var eigenvalueImaginary = [Double](repeating: 0.0, count: order)
+    var eigenvector = [Double](repeating: 0.0, count: order * order)
+    var varMatrix = matrix
+    var workspaceQuery = [Double](repeating: 0.0, count: 1)
+    var status = Int32(0)
+
+    // Workspace query
+    var orderInt32 = Int32(order)
+    var orderInt32_2 = Int32(order)
+
+    var lda = Int32(order)
+    var ldvr = Int32(order)
+    var lwork = Int32(-1)
+
+    let N = "N".utf8CString
+    let V = "V".utf8CString
+
+    _ = N.withUnsafeBufferPointer { nPtr in
+        V.withUnsafeBufferPointer { vPtr in
+            dgeev_(UnsafeMutablePointer(mutating: nPtr.baseAddress),
+                   UnsafeMutablePointer(mutating: vPtr.baseAddress),
+                   &orderInt32, &varMatrix, &lda, &eigenvalueReal, &eigenvalueImaginary,
+                   nil, &orderInt32_2, &eigenvector, &ldvr, &workspaceQuery, &lwork, &status)
         }
     }
 
-    if status == 0 {
-        return (eigenvalues: eigenvalueReal, eigenvectors: eigenvector)
-    } else {
-        return nil
+    guard status == 0 else { return nil }
+
+    // Actual computation
+    lwork = Int32(workspaceQuery[0])
+    var workspace = [Double](repeating: 0.0, count: Int(lwork))
+
+    _ = N.withUnsafeBufferPointer { nPtr in
+        V.withUnsafeBufferPointer { vPtr in
+            dgeev_(UnsafeMutablePointer(mutating: nPtr.baseAddress),
+                   UnsafeMutablePointer(mutating: vPtr.baseAddress),
+                   &orderInt32, &varMatrix, &lda, &eigenvalueReal, &eigenvalueImaginary,
+                   nil, &orderInt32_2, &eigenvector, &ldvr, &workspace, &lwork, &status)
+        }
     }
+
+    guard status == 0 else { return nil }
+
+    let eigenvalues = zip(eigenvalueReal, eigenvalueImaginary).map { (real: $0.0, imag: $0.1) }
+    let eigenvectors = stride(from: 0, to: eigenvector.count, by: order).map { Array(eigenvector[$0..<$0+order]) }
+
+    return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
 }
-*/
+
 func convTo4x4(_ a:[[Float]]) throws -> float4x4 {
     let row = a.count
     let col = a[0].count
@@ -186,6 +244,36 @@ public class Matrix {
         guard self.row == self.col else {
             throw Errors.MatrixSizeMismatch
         }
+        let count:Int = self.row * self.col
+        var flat = [Double](repeating:0,count:count)
+        for k in 0..<count{
+            let i:Int = k%self.row
+            let j:Int = k/self.col
+            flat[k] = Double(self.get(i,j))
+        }
+        let ret = eigenvaluesAndEigenvectors(matrix:flat,order:self.row)
+        guard let result = ret else {
+            throw Errors.NoEigenValues
+        }
+        var retVectors:[Vector] = []
+        var eigens:[Float] = []
+        
+        for item in zip(result.eigenvalues,result.eigenvectors){
+            if item.0.imag != 0 {
+                eigens.append(0)
+            }else {
+                eigens.append(Float(item.0.real))
+            }
+            let vec = Vector(item.1.map{Float($0)})
+            retVectors.append(vec)
+        }
+        return (eigens,retVectors)
+    }
+    /*
+    public func eigen() throws -> (eigenValues:[Float], eigenVectors:[Vector]){
+        guard self.row == self.col else {
+            throw Errors.MatrixSizeMismatch
+        }
         let epsilon:Float = 0.000001
         let maxCount = 10000
         let res = try self.qrDecomposition()
@@ -218,6 +306,7 @@ public class Matrix {
         }
         return (lastEigen,retVectors)
     }
+     */
     public static func - (lhs: Matrix, rhs: Matrix) throws -> Matrix {
         guard lhs.row == rhs.row && lhs.col == rhs.col else{
             throw Errors.MatrixSizeMismatch
