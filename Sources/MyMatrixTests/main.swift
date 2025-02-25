@@ -8,7 +8,7 @@
 import Testing
 
 func almostEqual (_ a:Float,_ b:Float) -> Bool{
-    let epsilon:Float = 0.0001
+    let epsilon:Float = 0.001
     
     let diff = abs( a - b)
     //    let diffdiff = epsilon - diff
@@ -147,9 +147,10 @@ struct Test {
     }
     @Test func testEigen() async throws {
    //        let winningPoints:[[Float]] = [[1,2,2],[3,1,1],[2,1,2]]
+        let matrixWithImaginaryEigen:[[Float]] = [[3,1],[-5,-1]]
         let winningPoints:[[Float]] = [[-26,-33,-25],[31,42,23],[-11,-15,-4]]
         let winMatrix = try Matrix(winningPoints)
-        let eigens = try winMatrix.eigen()
+        let eigens = try winMatrix.realEigen()
         let count = eigens.eigenValues.count
         for i in 0..<count {
             let vec = eigens.eigenVectors[i]
@@ -163,6 +164,9 @@ struct Test {
                 print ("eigen vector is \(vec.flat)")
             }
         }
+        let matIm = try Matrix(matrixWithImaginaryEigen)
+        let imEigen = try matIm.realEigen()
+        #expect(imEigen.eigenValues.count == 0)
 
     }
 

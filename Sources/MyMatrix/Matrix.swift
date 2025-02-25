@@ -18,44 +18,6 @@ enum Errors: Error {
 //typealias Scalar = Float
 //typealias Scalar4x4 = float4x4
 
-/*
-func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [(real: Double, imag: Double)], eigenvectors: [[Double]])? {
-    guard matrix.count == order * order else { return nil }
-
-    var eigenvalueReal = [Double](repeating: 0.0, count: order)
-    var eigenvalueImaginary = [Double](repeating: 0.0, count: order)
-    var eigenvector = [Double](repeating: 0.0, count: order * order)
-    var varMatrix = matrix
-    var workspaceQuery = [Double](repeating: 0.0, count: 1)
-    var status = Int32(0)
-
-    // Workspace query
-    var orderInt32 = Int32(order)
-    var orderInt32_2 = Int32(order)
-    var lda = Int32(order)
-    var ldvr = Int32(order)
-    var lwork = Int32(-1)
-    var N = "N"//Int8("N")//"N"
-    var V = "V"//Int8("V")//"V"
-
-    dgeev_(&N, &V, &orderInt32, &varMatrix, &lda, &eigenvalueReal, &eigenvalueImaginary, nil, &orderInt32_2, &eigenvector, &ldvr, &workspaceQuery, &lwork, &status)
-
-    guard status == 0 else { return nil }
-
-    // Actual computation
-    lwork = Int32(workspaceQuery[0])
-    var workspace = [Double](repeating: 0.0, count: Int(lwork))
-
-    dgeev_(&N,&V, &orderInt32, &varMatrix, &lda, &eigenvalueReal, &eigenvalueImaginary, nil, &orderInt32_2, &eigenvector, &ldvr, &workspace, &lwork, &status)
-
-    guard status == 0 else { return nil }
-
-    let eigenvalues = zip(eigenvalueReal, eigenvalueImaginary).map { (real: $0.0, imag: $0.1) }
-    let eigenvectors = stride(from: 0, to: eigenvector.count, by: order).map { Array(eigenvector[$0..<$0+order]) }
-
-    return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
-}
- */
 func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [(real: Double, imag: Double)], eigenvectors: [[Double]])? {
     guard matrix.count == order * order else { return nil }
 
@@ -228,7 +190,7 @@ public class Matrix {
         guard self.isNonNegativeMatrix() else {
             throw Errors.MatrixSizeMismatch
         }
-        let eigens = try self.eigen()
+        let eigens = try self.realEigen()
         var maxVal:Float = 0
         var maxVec:Vector = eigens.eigenVectors[0]
         for i in 0..<eigens.eigenValues.count {
@@ -240,7 +202,7 @@ public class Matrix {
         }
         return (maxVal,maxVec)
     }
-    public func eigen() throws -> (eigenValues:[Float], eigenVectors:[Vector]){
+    public func realEigen() throws -> (eigenValues:[Float], eigenVectors:[Vector]){// calculate eigen values for real matrix
         guard self.row == self.col else {
             throw Errors.MatrixSizeMismatch
         }
@@ -259,13 +221,13 @@ public class Matrix {
         var eigens:[Float] = []
         
         for item in zip(result.eigenvalues,result.eigenvectors){
-            if item.0.imag != 0 {
-                eigens.append(0)
+            if item.0.imag != 0 {// ignore imaginary eigen values
+//                eigens.append(0)
             }else {
                 eigens.append(Float(item.0.real))
+                let vec = Vector(item.1.map{Float($0)})
+                retVectors.append(vec)
             }
-            let vec = Vector(item.1.map{Float($0)})
-            retVectors.append(vec)
         }
         return (eigens,retVectors)
     }
