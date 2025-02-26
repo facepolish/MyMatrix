@@ -134,13 +134,6 @@ struct Test {
     
     @Test func testEigenFunc() async throws {
         let winningPoints:[Double] = [-26,31,-11,  -33,42,-15,  -25,23,-4]
-        let matrix: [Double] = [
-            4, 1,
-            1, 3
-        ]
-        let order = 2
-//        let ret = eigenvaluesAndEigenvectors(matrix:matrix,order:order)
-
         let ret = eigenvaluesAndEigenvectors(matrix:winningPoints,order:3)
         #expect( ret != nil )
         print(ret!.eigenvalues)

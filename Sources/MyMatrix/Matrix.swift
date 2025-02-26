@@ -14,6 +14,7 @@ enum Errors: Error {
     case MatrixSizeMismatch
     case VectorSizeMismatch
     case NoEigenValues
+    case NonNegativeMatrix
 }
 //typealias Scalar = Float
 //typealias Scalar4x4 = float4x4
@@ -166,7 +167,7 @@ public class Matrix {
         let plus = zip(lhs.flat, rhs.flat).map { $0.0 + $0.1 }
         return Matrix(plus, row: rhs.row, col: rhs.col)
     }
-    private func isNonNegativeMatrix() -> Bool {
+    public func isNonNegativeMatrix() -> Bool {
         guard self.col == self.row else {
             return false
         }
@@ -188,7 +189,7 @@ public class Matrix {
     }
     public func googleVector() throws -> (eigen:Float,eigenVec:Vector) {// If the matrix is no-negative google vector exist
         guard self.isNonNegativeMatrix() else {
-            throw Errors.MatrixSizeMismatch
+            throw Errors.NonNegativeMatrix
         }
         let eigens = try self.realEigen()
         var maxVal:Float = 0
@@ -231,44 +232,6 @@ public class Matrix {
         }
         return (eigens,retVectors)
     }
-    /*
-    public func eigen() throws -> (eigenValues:[Float], eigenVectors:[Vector]){
-        guard self.row == self.col else {
-            throw Errors.MatrixSizeMismatch
-        }
-        let epsilon:Float = 0.000001
-        let maxCount = 10000
-        let res = try self.qrDecomposition()
-        var q = res.q
-        var r = res.r
-        var a = try r * q
-        var x = q
-        var lastEigen = a.mainDiagonal()
-        var diff:Float = 0
-        var count = 0
-        repeat {
-            let res = try a.qrDecomposition()
-            q = res.q
-            r = res.r
-            a = try r * q
-            x = try x * q
-            let topEigen = a.mainDiagonal()
-            let diffVec = try Vector(lastEigen) - Vector(topEigen)
-            diff = diffVec.norm()
-//            print ("diff norm is \(diff)")
-            lastEigen = topEigen
-            count += 1
-            if count > maxCount {
-                break
-            }
-        }while(diff > epsilon)
-        var retVectors:[Vector] = []
-        for i in 0..<self.col {
-            retVectors.append(x.vector(i,orientation: true))
-        }
-        return (lastEigen,retVectors)
-    }
-     */
     public static func - (lhs: Matrix, rhs: Matrix) throws -> Matrix {
         guard lhs.row == rhs.row && lhs.col == rhs.col else{
             throw Errors.MatrixSizeMismatch

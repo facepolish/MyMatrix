@@ -32,6 +32,9 @@ public class Vector{
         let coef = 1/norm
         return coef * self
     }
+    public func get() -> [Float] {
+        return self.flat
+    }
     static func * (scalar:Float, vec:Vector) -> Vector {
         let ret = vec.flat.map {scalar * $0}
         return Vector(ret)
