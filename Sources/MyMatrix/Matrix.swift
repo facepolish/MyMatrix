@@ -14,7 +14,7 @@ enum Errors: Error {
     case MatrixSizeMismatch
     case VectorSizeMismatch
     case NoEigenValues
-    case NonNegativeMatrix
+    case ParameterError
 }
 //typealias Scalar = Float
 //typealias Scalar4x4 = float4x4
@@ -187,11 +187,20 @@ public class Matrix {
         }
         return ret
     }
-    public func googleVector() throws -> (eigen:Float,eigenVec:Vector) {// If the matrix is no-negative google vector exist
+    public func googleVector() throws -> (eigen:Float,eigenVec:Vector)? {// If the matrix is no-negative google vector exist
+        guard self.row == self.col else {
+            print ("Matrix is not square")
+            throw Errors.ParameterError
+        }
         guard self.isNonNegativeMatrix() else {
-            throw Errors.NonNegativeMatrix
+            print ("Matrix is not Non-Negative")
+            throw Errors.ParameterError
         }
         let eigens = try self.realEigen()
+        guard eigens.eigenVectors.count != 0 else {
+            print ("Matrix has no eigenvalue")
+            return nil
+        }
         var maxVal:Float = 0
         var maxVec:Vector = eigens.eigenVectors[0]
         for i in 0..<eigens.eigenValues.count {

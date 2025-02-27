@@ -114,29 +114,44 @@ struct Test {
             try testQR(mat)
         }
     }
-    @Test func testGoogleVector() async throws {
-        let winningPoints:[[Float]] = [[1,2,2],[3,1,1],[2,1,2]]
-//        let resultVec:Vector = Vector([1,1,1])
-        let resultEigen:Float = 5.0
-        let winMatrix = try Matrix(winningPoints)
-        let ggl = try winMatrix.googleVector()
-        print("google vector is ")
-        print( ggl.eigenVec.flat)
-        print("eigen value is " + String(ggl.eigen)   )
-        #expect(abs(ggl.eigen - resultEigen) < 0.001)
-        let rndMatrix = try randMatrix(10)
-        let winMatRnd = try rndMatrix.googleVector()
-        print("google vector is ")
-        print( winMatRnd.eigenVec.flat)
-        print("eigen value is " + String(winMatRnd.eigen)   )
-        
-    }
     
     @Test func testEigenFunc() async throws {
         let winningPoints:[Double] = [-26,31,-11,  -33,42,-15,  -25,23,-4]
         let ret = eigenvaluesAndEigenvectors(matrix:winningPoints,order:3)
         #expect( ret != nil )
         print(ret!.eigenvalues)
+    }
+    @Test func testGooleMethod() async throws {
+        let winningPoints:[[Float]] = [[1,2,2],[3,1,1],[2,1,2]]
+        let resultEigen:Float = 5.0
+        let winMatrix = try Matrix(winningPoints)
+        let gglp = try winMatrix.googleVector()
+        #expect(gglp != nil)
+        if let ggl = gglp {
+            print("google vector is ")
+            print( ggl.eigenVec.get())
+            print("eigen value is " + String(ggl.eigen)   )
+            #expect(abs(ggl.eigen - resultEigen) < 0.00001)
+        }
+        let rndMatrix = try randMatrix(10)
+        let winMatRndp = try rndMatrix.googleVector()
+        #expect(winMatRndp != nil)
+        if let winMatRnd = winMatRndp {
+            print("google vector is ")
+            print( winMatRnd.eigenVec.flat)
+            print("eigen value is " + String(winMatRnd.eigen)   )
+        }
+        let matrixWithImaginaryEigen:[[Float]] = [[3,1],[-5,-1]]
+        let nonSquare:[[Float]] = [[1,3,1,1],[3,2,3,1],[3,3,5,5]]
+//        let paraMatrix:[[Float]] = [[1,1,1],[1,1,1],[1,1,1]]
+        let negativeMatrix = try Matrix(matrixWithImaginaryEigen)
+        #expect(throws:(Errors.ParameterError)){
+            let _ = try negativeMatrix.googleVector()
+        }
+        let nonSqMatrix = try Matrix(nonSquare)
+        #expect(throws:(Errors.ParameterError)){
+            let _ = try nonSqMatrix.googleVector()?.eigen
+        }
     }
     @Test func testEigen() async throws {
    //        let winningPoints:[[Float]] = [[1,2,2],[3,1,1],[2,1,2]]
