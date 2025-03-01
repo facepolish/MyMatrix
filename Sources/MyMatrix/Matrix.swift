@@ -8,8 +8,9 @@
 import simd
 import Foundation
 import Accelerate
+// 定数近似値
 let epsilon:Float = 0.0001
-
+// エラーを定義する列挙体
 enum Errors: Error {
     case MatrixSizeMismatch
     case VectorSizeMismatch
@@ -20,23 +21,24 @@ enum Errors: Error {
 //typealias Scalar4x4 = float4x4
 
 func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [(real: Double, imag: Double)], eigenvectors: [[Double]])? {
+    // 行列が正方行列であることを前提に要素数との一致性を確認
     guard matrix.count == order * order else { return nil }
-
+    // 固有値と固有ベクトルを格納するための配列
     var eigenvalueReal = [Double](repeating: 0.0, count: order)
     var eigenvalueImaginary = [Double](repeating: 0.0, count: order)
     var eigenvector = [Double](repeating: 0.0, count: order * order)
     var varMatrix = matrix
     var workspaceQuery = [Double](repeating: 0.0, count: 1)
     var status = Int32(0)
-
-    // Workspace query
+    // ワークスペースのクエリ
     var orderInt32 = Int32(order)
     var orderInt32_2 = Int32(order)
 
     var lda = Int32(order)
     var ldvr = Int32(order)
     var lwork = Int32(-1)
-
+    
+    // LAPACK関数を呼び出し、ワークスペースのサイズを求める
     let N = "N".utf8CString
     let V = "V".utf8CString
 
@@ -48,10 +50,9 @@ func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [
                    nil, &orderInt32_2, &eigenvector, &ldvr, &workspaceQuery, &lwork, &status)
         }
     }
-
+    // ステータスチェック
     guard status == 0 else { return nil }
-
-    // Actual computation
+    // 実際の計算
     lwork = Int32(workspaceQuery[0])
     var workspace = [Double](repeating: 0.0, count: Int(lwork))
 
@@ -63,9 +64,9 @@ func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [
                    nil, &orderInt32_2, &eigenvector, &ldvr, &workspace, &lwork, &status)
         }
     }
-
+    // ステータスチェック
     guard status == 0 else { return nil }
-
+    // 固有値と固有ベクトルの取得
     let eigenvalues = zip(eigenvalueReal, eigenvalueImaginary).map { (real: $0.0, imag: $0.1) }
     let eigenvectors = stride(from: 0, to: eigenvector.count, by: order).map { Array(eigenvector[$0..<$0+order]) }
 
@@ -85,10 +86,12 @@ func convTo4x4(_ a:[[Float]]) throws -> float4x4 {
     return ret
 }
 public class Matrix {
+    // 行列のすべての要素を一つの配列にフラットに保存
     public var flat: [Float] = []
-    public var row: Int
-    public var col: Int
+    public var row: Int // 行数
+    public var col: Int // 列数
     
+    // 初期化子：2次元配列を受け取りMatrixを生成
     public init(_ a: [[Float]]) throws {
         self.row = a.count
         self.col = a[0].count
@@ -100,6 +103,7 @@ public class Matrix {
             }
         }
     }
+    // 行列の指定位を取得
     public func get(_ row:Int,_ col:Int) -> Float {
         let offset = self.col * row + col
         return self.flat[offset]
@@ -148,6 +152,7 @@ public class Matrix {
         let r = try q.transpose() * self
         return (q,r)
     }
+    // 特定のインデックスの列ベクトルまたは行ベクトルを取得
     //extract row or column vector from matrix. if orientation is true -> column vec
     public func vector(_ index:Int,orientation:Bool) -> Vector {
         var flat:[Float] = []
@@ -167,6 +172,7 @@ public class Matrix {
         let plus = zip(lhs.flat, rhs.flat).map { $0.0 + $0.1 }
         return Matrix(plus, row: rhs.row, col: rhs.col)
     }
+    // 非負行列可動かを判定
     public func isNonNegativeMatrix() -> Bool {
         guard self.col == self.row else {
             return false
@@ -179,6 +185,7 @@ public class Matrix {
         }
         return true
     }
+    //対角成分の抽出
     public func mainDiagonal() -> [Float] {
         var ret:[Float] = []
         let count = min(self.row,self.col)
@@ -212,6 +219,7 @@ public class Matrix {
         }
         return (maxVal,maxVec)
     }
+    //実数固有値の抽出
     public func realEigen() throws -> (eigenValues:[Float], eigenVectors:[Vector]){// calculate eigen values for real matrix
         guard self.row == self.col else {
             throw Errors.MatrixSizeMismatch
@@ -281,6 +289,7 @@ public class Matrix {
         }
         return ret
     }
+    //転置演算
     public func transpose() -> Matrix {
         var trans = [Float](repeating: 0.0, count: self.row * self.col)
         vDSP_mtrans(self.flat, 1, &trans, 1, vDSP_Length(self.col), vDSP_Length(self.row))
@@ -335,3 +344,4 @@ extension float2x2: SmallMatrix {
         set { self[row][column] = newValue }
     }
 }
+
