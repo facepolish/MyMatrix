@@ -6,20 +6,12 @@
 //
 @testable import MyMatrix
 import Testing
-
-func almostEqual (_ a:Float,_ b:Float) -> Bool{
-    let epsilon:Float = 0.001
-    
-    let diff = abs( a - b)
-    //    let diffdiff = epsilon - diff
-    if diff < epsilon {
-//        print("error is " + String(diff))
-        return true
-    }
-    return false
+func almostEqual(_ a: Float, _ b: Float, epsilon: Float = 0.001) -> Bool {
+    let diff = abs(a - b)
+    let relativeError = diff / max(abs(a), abs(b), 1.0)
+    return relativeError < epsilon
 }
-func almostEqualVectors (_ a:Vector,_ b:Vector) throws -> Bool {
-    let epsilon:Float = 0.1
+func almostEqualVectors (_ a:Vector,_ b:Vector, epsilon: Float = 0.001) throws -> Bool {
     
     guard a.size == b.size else {
         return false
@@ -34,25 +26,27 @@ func almostEqualVectors (_ a:Vector,_ b:Vector) throws -> Bool {
     }
     return true
 }
-func isUpperTriangularMatrix(_ a:Matrix) -> Bool {
-    let mat:[[Float]] = a.get()
+
+func isUpperTriangularMatrix(_ a: Matrix, epsilon: Float = 0.001) -> Bool {
+    let mat: [[Float]] = a.get()
     for i in 0..<a.row {
         for j in 0..<i {
-            if !almostEqual(mat[i][j],0.0){
+            if !almostEqual(mat[i][j], 0.0, epsilon: epsilon) {
                 return false
             }
         }
     }
     return true
 }
-func isAlmostI (_ a:Matrix) -> Bool{
-    guard a.row == a.col else{
+func isAlmostI(_ a: Matrix, epsilon: Float = 0.001) -> Bool {
+    guard a.row == a.col else {
         return false
     }
     let mat = a.get()
     for i in 0..<a.row {
         for j in 0..<a.col {
-            if  (( i == j) && !almostEqual(mat[i][j],1.0)) || ((i != j) && !almostEqual(mat[i][j], 0.0)){
+            if ((i == j) && !almostEqual(mat[i][j], 1.0, epsilon: epsilon)) ||
+               ((i != j) && !almostEqual(mat[i][j], 0.0, epsilon: epsilon)) {
                 return false
             }
         }
