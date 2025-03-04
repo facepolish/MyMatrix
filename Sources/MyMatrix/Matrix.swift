@@ -159,7 +159,7 @@ public class Matrix {
         if orientation {// Column vector
             flat = stride(from:index,to:self.flat.count,by:self.col).map{i in self.flat[i]}
         }else{
-            let offset = index*self.row
+            let offset = index*self.col
             let end = offset+self.col
             flat = Array(self.flat[offset..<end])
         }

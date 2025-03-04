@@ -11,6 +11,17 @@ func almostEqual(_ a: Float, _ b: Float, epsilon: Float = 0.001) -> Bool {
     let relativeError = diff / max(abs(a), abs(b), 1.0)
     return relativeError < epsilon
 }
+func almostEqualMatrix (_ a:Matrix,_ b:Matrix) -> Bool {
+    guard a.row == b.row && a.col == b.col else {
+        return false
+    }
+    for item in zip(a.flat,b.flat){
+        if !almostEqual(item.0,item.1) {
+            return false
+        }
+    }
+    return true
+}
 func almostEqualVectors (_ a:Vector,_ b:Vector, epsilon: Float = 0.001) throws -> Bool {
     
     guard a.size == b.size else {
@@ -79,6 +90,23 @@ struct Test {
         let mul = try mm.q.transpose() * mm.q
         #expect( isAlmostI( mul ) )
         #expect( isUpperTriangularMatrix(mm.r) )
+    }
+    @Test func testMatrixMultiply() async throws {
+        let a:[[Float]] = [[1,2,3],[4,5,6]]
+        let b:[[Float]] = [[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24]]
+        let c:[[Float]] = [[100,106,112,118,124],[235,250,265,280,295]]
+        let d:[Float] = [4,5,6]
+        let e:[Float] = [1,4]
+        let a_mat = try Matrix(a)
+        let b_mat = try Matrix(b)
+        let c_mat = try Matrix(c)
+        let res_mat = try a_mat * b_mat
+        #expect( almostEqualMatrix(res_mat,c_mat))
+        let d_vec = Vector(d)
+        let e_vec = a_mat.vector(1,orientation: false)
+        #expect( try almostEqualVectors(e_vec,d_vec))
+        let f_vec = a_mat.vector(0,orientation: true)
+        #expect( try almostEqualVectors(f_vec,Vector(e)))
     }
     @Test func testMatrixVector() async throws {
         let checkMatrix3:[[Float]] = [[0,1,1],[1,0,1],[1,1,0]]
