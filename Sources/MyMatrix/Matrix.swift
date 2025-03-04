@@ -73,18 +73,6 @@ func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [
     return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
 }
 
-func convTo4x4(_ a:[[Float]]) throws -> float4x4 {
-    let row = a.count
-    let col = a[0].count
-    if row != col || row != 4 {
-        throw Errors.MatrixSizeMismatch
-    }
-    var ret = float4x4()
-    for i in 0..<4 {
-        ret[i] = SIMD4(a[i][0], a[i][1], a[i][2], a[i][3])
-    }
-    return ret
-}
 public class Matrix {
     // 行列のすべての要素を一つの配列にフラットに保存
     public var flat: [Float] = []
@@ -295,53 +283,4 @@ public class Matrix {
         vDSP_mtrans(self.flat, 1, &trans, 1, vDSP_Length(self.col), vDSP_Length(self.row))
         return Matrix(trans, row: self.col, col: self.row)
     }
-    func compare(_ other:float4x4) -> Bool{
-        return compare(other, 4,4)
-    }
-    func compare(_ other:float3x3) -> Bool{
-        return compare(other, 3,3)
-    }
-    func compare(_ other:float2x2) -> Bool{
-        return compare(other, 2,2)
-    }
-    private func compare(_ other: any SmallMatrix,_ row:Int,_ col:Int) -> Bool {
-        guard self.row == row, self.col == col else {
-            return false
-        }
-        for i in 0..<row {
-            for j in 0..<col {
-                let index = i * row + j
-                if abs(self.flat[index] - other[i,j]) > 0.001 {
-                    return false
-                }
-            }
-        }
-        return true
-    }
 }
-protocol SmallMatrix {
-    associatedtype Scalar: SIMDScalar
-    subscript(row: Int, column: Int) -> Float { get set }
-}
-extension float4x4: SmallMatrix {
-    typealias Scalar = Float
-    subscript(_ row: Int,_  column: Int) -> Scalar {
-        get { self[row][column] }
-        set { self[row][column] = newValue }
-    }
-}
-extension float3x3: SmallMatrix {
-    typealias Scalar = Float
-    subscript(_ row: Int,_  column: Int) -> Scalar {
-        get { self[row][column] }
-        set { self[row][column] = newValue }
-    }
-}
-extension float2x2: SmallMatrix {
-    typealias Scalar = Float
-    subscript(_ row: Int,_  column: Int) -> Scalar {
-        get { self[row][column] }
-        set { self[row][column] = newValue }
-    }
-}
-

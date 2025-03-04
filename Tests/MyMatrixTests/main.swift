@@ -37,7 +37,6 @@ func almostEqualVectors (_ a:Vector,_ b:Vector, epsilon: Float = 0.001) throws -
     }
     return true
 }
-
 func isUpperTriangularMatrix(_ a: Matrix, epsilon: Float = 0.001) -> Bool {
     let mat: [[Float]] = a.get()
     for i in 0..<a.row {
@@ -197,9 +196,7 @@ struct Test {
         let matIm = try Matrix(matrixWithImaginaryEigen)
         let imEigen = try matIm.realEigen()
         #expect(imEigen.eigenValues.count == 0)
-
     }
-
 }
  
 
