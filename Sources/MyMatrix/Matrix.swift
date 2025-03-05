@@ -284,3 +284,46 @@ public class Matrix {
         return Matrix(trans, row: self.col, col: self.row)
     }
 }
+func multiplyMatrix(_ a:Matrix,_ b:Matrix) -> Matrix {
+    let a_flat = a.flat.map{Double($0)}
+    let b_flat = b.flat.map{Double($0)}
+    let ret = DGEMM(a: a_flat, b: b_flat, m: a.row, n: b.col, k: a.col)
+    let fl = ret.map{Float($0)}
+    return Matrix(fl,row:a.row,col:b.col)
+}
+func DGEMM(
+    a: [Double],
+    b: [Double],
+    m: Int,
+    n: Int,
+    k: Int
+) -> [Double] {
+    let order = CblasRowMajor
+    let trans = CblasNoTrans
+    
+    var c = [Double](repeating: 0.0, count: m * n)
+    
+    a.withUnsafeBufferPointer { aPtr in
+        b.withUnsafeBufferPointer { bPtr in
+            c.withUnsafeMutableBufferPointer { cPtr in
+                cblas_dgemm(
+                    order,
+                    trans,
+                    trans,
+                    Int32(m),
+                    Int32(n),
+                    Int32(k),
+                    1.0,
+                    aPtr.baseAddress!,
+                    Int32(k),
+                    bPtr.baseAddress!,
+                    Int32(n),
+                    0.0,
+                    cPtr.baseAddress!,
+                    Int32(n)
+                )
+            }
+        }
+    }
+    return c
+}

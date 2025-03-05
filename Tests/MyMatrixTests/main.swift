@@ -106,6 +106,9 @@ struct Test {
         #expect( try almostEqualVectors(e_vec,d_vec))
         let f_vec = a_mat.vector(0,orientation: true)
         #expect( try almostEqualVectors(f_vec,Vector(e)))
+        
+        let la_ret = multiplyMatrix(a_mat, b_mat)
+        #expect( almostEqualMatrix(la_ret,c_mat))
     }
     @Test func testMatrixVector() async throws {
         let checkMatrix3:[[Float]] = [[0,1,1],[1,0,1],[1,1,0]]
@@ -198,7 +201,4 @@ struct Test {
         #expect(imEigen.eigenValues.count == 0)
     }
 }
- 
 
-
- 
