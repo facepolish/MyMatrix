@@ -73,14 +73,14 @@ func eigenvaluesAndEigenvectors(matrix: [Double], order: Int) -> (eigenvalues: [
     return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
 }
 
-public class Matrix {
+public class Matrix<T:BinaryFloatingPoint> {
     // 行列のすべての要素を一つの配列にフラットに保存
-    public var flat: [Float] = []
+    public var flat: [T] = []
     public var row: Int // 行数
     public var col: Int // 列数
     
     // 初期化子：2次元配列を受け取りMatrixを生成
-    public init(_ a: [[Float]]) throws {
+    public init(_ a: [[T]]) throws {
         self.row = a.count
         self.col = a[0].count
         for i in 0..<row {
@@ -92,17 +92,17 @@ public class Matrix {
         }
     }
     // 行列の指定位を取得
-    public func get(_ row:Int,_ col:Int) -> Float {
+    public func get(_ row:Int,_ col:Int) -> T {
         let offset = self.col * row + col
         return self.flat[offset]
     }
 
-    public init(_ a: [Float], row: Int, col: Int) {
+    public init(_ a: [T], row: Int, col: Int) {
         self.flat = a
         self.row = row
         self.col = col
     }
-    public init(_ a:Vector,orientation:Bool){//if orientation is true -> column vector
+    public init(_ a:Vector<T>,orientation:Bool){//if orientation is true -> column vector
         self.flat = a.flat
         if orientation {
             self.row = a.size
@@ -113,10 +113,10 @@ public class Matrix {
         }
     }
 
-    public init(_ f:[Vector]){// assume vecgors as col vectors
+    public init(_ f:[Vector<T>]){// assume vecgors as col vectors
         let cols = f.count
         let rows = f[0].size
-        let flat_ini:[Float] = []
+        let flat_ini:[T] = []
         let flat = f.reduce(flat_ini){$0+$1.flat}
         let retMat = Matrix(flat,row:cols,col:rows).transpose()
         self.flat = retMat.flat
@@ -124,11 +124,11 @@ public class Matrix {
         self.col = retMat.col
     }
     public func orthnormal() throws -> Matrix {
-        var vecs:[Vector] = []
+        var vecs:[Vector<T>] = []
         let count = min(self.col,self.row)
         for i in 0..<count {
             let vec = self.vector(i, orientation: true)
-            var difVec = Vector(0.0,size:vec.size)
+            var difVec = Vector(T(0.0),size:vec.size)
             difVec = try vecs.reduce(difVec){try $0 - (try vec*$1) * $1}
             let retVec = try vec + difVec
             vecs.append(retVec.normalize())
@@ -142,8 +142,8 @@ public class Matrix {
     }
     // 特定のインデックスの列ベクトルまたは行ベクトルを取得
     //extract row or column vector from matrix. if orientation is true -> column vec
-    public func vector(_ index:Int,orientation:Bool) -> Vector {
-        var flat:[Float] = []
+    public func vector(_ index:Int,orientation:Bool) -> Vector<T> {
+        var flat:[T] = []
         if orientation {// Column vector
             flat = stride(from:index,to:self.flat.count,by:self.col).map{i in self.flat[i]}
         }else{
@@ -174,15 +174,15 @@ public class Matrix {
         return true
     }
     //対角成分の抽出
-    public func mainDiagonal() -> [Float] {
-        var ret:[Float] = []
+    public func mainDiagonal() -> [T] {
+        var ret:[T] = []
         let count = min(self.row,self.col)
         for i in 0..<count {
             ret.append(self.get(i,i))
         }
         return ret
     }
-    public func googleVector() throws -> (eigen:Float,eigenVec:Vector)? {// If the matrix is no-negative google vector exist
+    public func googleVector() throws -> (eigen:T,eigenVec:Vector<T>)? {// If the matrix is no-negative google vector exist
         guard self.row == self.col else {
             print ("Matrix is not square")
             throw Errors.ParameterError
@@ -196,8 +196,8 @@ public class Matrix {
             print ("Matrix has no eigenvalue")
             return nil
         }
-        var maxVal:Float = 0
-        var maxVec:Vector = eigens.eigenVectors[0]
+        var maxVal:T = 0
+        var maxVec:Vector<T> = eigens.eigenVectors[0]
         for i in 0..<eigens.eigenValues.count {
             if eigens.eigenValues[i] > maxVal {
                 maxVal = eigens.eigenValues[i]
@@ -208,7 +208,7 @@ public class Matrix {
         return (maxVal,maxVec)
     }
     //実数固有値の抽出
-    public func realEigen() throws -> (eigenValues:[Float], eigenVectors:[Vector]){// calculate eigen values for real matrix
+    public func realEigen() throws -> (eigenValues:[T], eigenVectors:[Vector<T>]){// calculate eigen values for real matrix
         guard self.row == self.col else {
             throw Errors.MatrixSizeMismatch
         }
@@ -223,15 +223,15 @@ public class Matrix {
         guard let result = ret else {
             throw Errors.NoEigenValues
         }
-        var retVectors:[Vector] = []
-        var eigens:[Float] = []
+        var retVectors:[Vector<T>] = []
+        var eigens:[T] = []
         
         for item in zip(result.eigenvalues,result.eigenvectors){
             if item.0.imag != 0 {// ignore imaginary eigen values
 //                eigens.append(0)
             }else {
-                eigens.append(Float(item.0.real))
-                let vec = Vector(item.1.map{Float($0)})
+                eigens.append(T(item.0.real))
+                let vec = Vector(item.1.map{T($0)})
                 retVectors.append(vec)
             }
         }
@@ -244,14 +244,14 @@ public class Matrix {
         let minus = zip(lhs.flat, rhs.flat).map { $0.0 - $0.1 }
         return Matrix(minus, row: rhs.row, col: rhs.col)
     }
-    public static func * (lhs:Matrix, rhs:Vector) throws -> Vector { // Assume vector as col vector
+    public static func * (lhs:Matrix, rhs:Vector<T>) throws -> Vector<T> { // Assume vector as col vector
         guard lhs.col == rhs.size else {
             throw Errors.MatrixSizeMismatch
         }
         let matt = lhs.get()
-        var flat:[Float] = []
+        var flat:[T] = []
         for i in 0..<lhs.row {
-            var val:Float = 0
+            var val:T = 0
             for j in 0..<lhs.col {
                 val = val + matt[i][j] * rhs.flat[j]
             }
@@ -263,13 +263,28 @@ public class Matrix {
         guard lhs.col == rhs.row else{
             throw Errors.MatrixSizeMismatch
         }
-        var mul = [Float](repeating: 0.0, count: lhs.row * rhs.col)
-        vDSP_mmul(lhs.flat, 1, rhs.flat, 1, &mul, 1, vDSP_Length(lhs.row), vDSP_Length(rhs.col), vDSP_Length(lhs.col))
+        var mul = [T](repeating: 0.0, count: lhs.row * rhs.col)
+        if T.self == Float.self {
+            let lhsFloat = lhs.flat as! [Float]
+            let rhsFloat = rhs.flat as! [Float]
+            var resultFloat = [Float](repeating: 0.0, count: mul.count)
+            vDSP_mmul(lhsFloat, 1, rhsFloat, 1, &resultFloat, 1, vDSP_Length(lhs.row), vDSP_Length(rhs.col), vDSP_Length(lhs.col))
+            mul = resultFloat as! [T]
+        } else if T.self == Double.self {
+            let lhsFloat = lhs.flat as! [Double]
+            let rhsFloat = rhs.flat as! [Double]
+            var resultFloat = [Double](repeating: 0.0, count: mul.count)
+            vDSP_mmulD(lhsFloat, 1, rhsFloat, 1, &resultFloat, 1, vDSP_Length(lhs.row), vDSP_Length(rhs.col), vDSP_Length(lhs.col))
+            mul = resultFloat as! [T]
+        }
+        else {
+                   fatalError("Unsupported floating-point type")
+               }
         return Matrix(mul, row: lhs.row, col: rhs.col)
     }
 
-    public func get() -> [[Float]] {
-        var ret = [[Float]](repeating: [Float](repeating: 0.0, count: self.col), count: self.row)
+    public func get() -> [[T]] {
+        var ret = [[T]](repeating: [T](repeating: 0.0, count: self.col), count: self.row)
         for i in 0..<self.row {
             for j in 0..<self.col {
                 ret[i][j] = self.flat[i*self.col+j]
@@ -279,17 +294,31 @@ public class Matrix {
     }
     //転置演算
     public func transpose() -> Matrix {
-        var trans = [Float](repeating: 0.0, count: self.row * self.col)
-        vDSP_mtrans(self.flat, 1, &trans, 1, vDSP_Length(self.col), vDSP_Length(self.row))
+        var trans = [T](repeating: 0.0, count: self.row * self.col)
+        if T.self == Float.self {
+            let flat = self.flat as! [Float]
+            var transFloat = [Float](repeating: 0.0, count: self.row * self.col)
+            vDSP_mtrans(flat, 1, &transFloat, 1, vDSP_Length(self.col), vDSP_Length(self.row))
+            trans = transFloat as! [T]
+        }else if T.self == Double.self {
+            let flat = self.flat as! [Double]
+            var transFloat = [Double](repeating: 0.0, count: self.row * self.col)
+            vDSP_mtransD(flat, 1, &transFloat, 1, vDSP_Length(self.col), vDSP_Length(self.row))
+            trans = transFloat as! [T]
+        }
         return Matrix(trans, row: self.col, col: self.row)
     }
 }
-func multiplyMatrix(_ a:Matrix,_ b:Matrix) -> Matrix {
+func multiplyMatrix(_ a:Matrix<Float>,_ b:Matrix<Float>) -> Matrix<Float>{
     let a_flat = a.flat.map{Double($0)}
     let b_flat = b.flat.map{Double($0)}
     let ret = DGEMM(a: a_flat, b: b_flat, m: a.row, n: b.col, k: a.col)
     let fl = ret.map{Float($0)}
     return Matrix(fl,row:a.row,col:b.col)
+}
+func multiplyMatrix(_ a:Matrix<Double>,_ b:Matrix<Double>) -> Matrix<Double>{
+    let ret = DGEMM(a: a.flat, b: b.flat, m: a.row, n: b.col, k: a.col)
+    return Matrix(ret,row:a.row,col:b.col)
 }
 func DGEMM(
     a: [Double],

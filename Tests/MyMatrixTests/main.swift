@@ -6,12 +6,12 @@
 //
 @testable import MyMatrix
 import Testing
-func almostEqual(_ a: Float, _ b: Float, epsilon: Float = 0.001) -> Bool {
+func almostEqual<T:BinaryFloatingPoint>(_ a: T, _ b: T, epsilon: T = 0.001) -> Bool {
     let diff = abs(a - b)
     let relativeError = diff / max(abs(a), abs(b), 1.0)
     return relativeError < epsilon
 }
-func almostEqualMatrix (_ a:Matrix,_ b:Matrix) -> Bool {
+func almostEqualMatrix<T:BinaryFloatingPoint> (_ a:Matrix<T>,_ b:Matrix<T>) -> Bool {
     guard a.row == b.row && a.col == b.col else {
         return false
     }
@@ -22,7 +22,7 @@ func almostEqualMatrix (_ a:Matrix,_ b:Matrix) -> Bool {
     }
     return true
 }
-func almostEqualVectors (_ a:Vector,_ b:Vector, epsilon: Float = 0.001) throws -> Bool {
+func almostEqualVectors<T:BinaryFloatingPoint> (_ a:Vector<T>,_ b:Vector<T>, epsilon: T = 0.001) throws -> Bool {
     
     guard a.size == b.size else {
         return false
@@ -37,8 +37,8 @@ func almostEqualVectors (_ a:Vector,_ b:Vector, epsilon: Float = 0.001) throws -
     }
     return true
 }
-func isUpperTriangularMatrix(_ a: Matrix, epsilon: Float = 0.001) -> Bool {
-    let mat: [[Float]] = a.get()
+func isUpperTriangularMatrix<T:BinaryFloatingPoint>(_ a: Matrix<T>, epsilon: T = 0.001) -> Bool {
+    let mat: [[T]] = a.get()
     for i in 0..<a.row {
         for j in 0..<i {
             if !almostEqual(mat[i][j], 0.0, epsilon: epsilon) {
@@ -48,7 +48,7 @@ func isUpperTriangularMatrix(_ a: Matrix, epsilon: Float = 0.001) -> Bool {
     }
     return true
 }
-func isAlmostI(_ a: Matrix, epsilon: Float = 0.001) -> Bool {
+func isAlmostI<T:BinaryFloatingPoint>(_ a: Matrix<T>, epsilon: T = 0.001) -> Bool {
     guard a.row == a.col else {
         return false
     }
@@ -63,7 +63,7 @@ func isAlmostI(_ a: Matrix, epsilon: Float = 0.001) -> Bool {
     }
     return true
 }
-func randMatrixRowCol (row:Int,col:Int) throws -> Matrix {
+func randMatrixRowCol (row:Int,col:Int) throws -> Matrix<Float> {
     var b:[[Float]]=[]
     for _ in 0..<col{
         var a:[Float]=[]
@@ -74,14 +74,14 @@ func randMatrixRowCol (row:Int,col:Int) throws -> Matrix {
     }
     return try Matrix(b)
 }
-func randMatrix(_ rank:Int) throws -> Matrix {
+func randMatrix(_ rank:Int) throws -> Matrix<Float> {
     return try randMatrixRowCol(row:rank,col:rank)
 }
 
 
 struct Test {
     // Check QR decomposition
-    func testQR(_ m:Matrix) throws {
+    func testQR<T:BinaryFloatingPoint>(_ m:Matrix<T>) throws {
         let orth = try m.orthnormal()
         let II = try orth.transpose() * orth
         #expect( isAlmostI(II))
