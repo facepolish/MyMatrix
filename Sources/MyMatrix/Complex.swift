@@ -4,9 +4,10 @@
 //
 //  Created by 酒井裕司 on 2025/03/05.
 //
+
 import Foundation
 protocol ComplexNumberType {
-    associatedtype RealType: BinaryFloatingPoint //FloatingPoint
+    associatedtype RealType: FloatingPoint //FloatingPoint
     var real: RealType { get set }
     var imaginary: RealType { get set }
 
@@ -18,7 +19,8 @@ protocol ComplexNumberType {
     static func *(lhs: Self, rhs: Self) -> Self
     static func /(lhs: Self, rhs: Self) -> Self
 }
-struct Complex<T: BinaryFloatingPoint/*FloatingPoint*/>: ComplexNumberType {
+
+struct Complex<T: BinaryFloatingPoint>: ComplexNumberType {
     typealias RealType = T
     var real: T
     var imaginary: T

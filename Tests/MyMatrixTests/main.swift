@@ -4,6 +4,7 @@
 //
 //  Created by 酒井裕司 on 2025/02/23.
 //
+
 @testable import MyMatrix
 import Testing
 func almostEqual<T:BinaryFloatingPoint>(_ a: T, _ b: T, epsilon: T = 0.001) -> Bool {
@@ -77,6 +78,7 @@ func randMatrixRowCol (row:Int,col:Int) throws -> Matrix<Float> {
 func randMatrix(_ rank:Int) throws -> Matrix<Float> {
     return try randMatrixRowCol(row:rank,col:rank)
 }
+let epsilon:Double = 0.0001
 
 
 struct Test {
@@ -109,6 +111,7 @@ struct Test {
         
         let la_ret = multiplyMatrix(a_mat, b_mat)
         #expect( almostEqualMatrix(la_ret,c_mat))
+        print("epsilon = \(epsilon)")
     }
     @Test func testMatrixVector() async throws {
         let checkMatrix3:[[Float]] = [[0,1,1],[1,0,1],[1,1,0]]
@@ -202,3 +205,76 @@ struct Test {
     }
 }
 
+import Testing
+//@testable import YourModuleName // Replace with the name of your module
+func testAlmostEqual<T:BinaryFloatingPoint>(_ a: T, _ b: T, epsilon: T = 0.001) -> Bool {
+    let diff = abs(a - b)
+    let relativeError = diff / max(abs(a), abs(b), 1.0)
+    return relativeError < epsilon
+}
+func testAlmostEqualMatrix<T:BinaryFloatingPoint> (_ a:[T],_ b:[T]) -> Bool {
+    guard a.count == b.count else {
+        return false
+    }
+    for item in zip(a,b){
+        if !testAlmostEqual(item.0,item.1) {
+            return false
+        }
+    }
+    return true
+}
+
+struct  Test2 {
+    @Test func testDGEMMCase1() async {
+        // 入力行列の定義
+        let a: [Double] = [
+            1.0, 2.0, 3.0, 4.0,
+            5.0, 6.0, 7.0, 8.0,
+            9.0, 10.0, 11.0, 12.0
+        ]
+        let b: [Double] = [
+            1.0, 2.0, 3.0,
+            4.0, 5.0, 6.0,
+            7.0, 8.0, 9.0,
+            10.0, 11.0, 12.0
+        ]
+
+        // 期待される計算結果
+
+        let expected: [Double] = [
+            70.0, 80.0, 90.0,
+            158.0, 184.0, 210.0,
+            246.0, 288.0, 330.0
+        ]
+        // 行列積の実施
+        let result = DGEMM(a: a, b: b, m: 3, n: 3, k: 4)
+        #expect(testAlmostEqualMatrix(result, expected))
+    }
+    @Test func testDGEMMCase2() async {
+
+        // 異なるテストセットの定義
+
+        let a: [Double] = [
+            2.0, 0.0, 1.0, 3.0,
+            4.0, 1.0, 0.0, 2.0,
+            5.0, 2.0, 1.0, 0.0
+        ]
+        let b: [Double] = [
+            1.0, 2.0, 1.0,
+            0.0, 1.0, 4.0,
+            3.0, 4.0, 0.0,
+            2.0, 0.0, 1.0
+        ]
+        // 期待される結果
+
+        let expected: [Double] = [
+            11.0, 8.0, 5.0,
+            8.0, 9.0, 10.0,
+            8.0, 16.0, 13.0
+        ]
+        // 行列積の実施
+        let result = DGEMM(a: a, b: b, m: 3, n: 3, k: 4)
+        #expect(testAlmostEqualMatrix(result, expected))
+    }
+
+}
