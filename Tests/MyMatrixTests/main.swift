@@ -78,7 +78,6 @@ func randMatrixRowCol (row:Int,col:Int) throws -> Matrix<Float> {
 func randMatrix(_ rank:Int) throws -> Matrix<Float> {
     return try randMatrixRowCol(row:rank,col:rank)
 }
-let epsilon:Double = 0.0001
 
 
 struct Test {
@@ -277,4 +276,75 @@ struct  Test2 {
         #expect(testAlmostEqualMatrix(result, expected))
     }
 
+}
+struct Test4 {
+    @Test func invertMatrixTest() async {
+        // メイン処理
+        let B: [Double] = [
+            1, 3,
+            2, 4
+        ]
+        let II: [[Double]] = [
+            [1, 0],
+            [0, 1]
+        ]
+        let invA = invert(matrix: B)
+        guard let MatA = colMajorToMatrix(B, row: 2, col: 2), // 変換が成功した場合
+              let matInv = colMajorToMatrix(invA, row: 2, col: 2) else {
+            return
+        }
+        // 行列の乗算を行う
+        let ret = matrixMultiply(matInv, MatA)
+        print(ret)
+        
+        // 行列が等しいかを比較
+        #expect (compareMatrices(ret, II) )
+    }
+}
+
+// 列主要形式の配列を二次元行列に変換する関数
+func colMajorToMatrix<T: BinaryFloatingPoint>(_ matrix: [T], row: Int, col: Int) -> [[T]]? {
+    guard row * col == matrix.count else {
+        return nil
+    }
+    var retMat = [[T]](repeating: [T](repeating: 0.0, count: col), count: row)
+    for i in 0..<row {
+        for j in 0..<col {
+            retMat[i][j] = matrix[i + j * row] // 行列のインデックスを修正
+        }
+    }
+    return retMat
+}
+
+// 行列の乗算を行う関数
+func matrixMultiply(_ a: [[Double]], _ b: [[Double]]) -> [[Double]] {
+    let row = a.count
+    let col = b[0].count // bの列数を取得
+    let kCount = a[0].count
+    var result = [[Double]](repeating: [Double](repeating: 0.0, count: col), count: row)
+    
+    for i in 0..<row {
+        for j in 0..<col {
+            for k in 0..<kCount {
+                result[i][j] += a[i][k] * b[k][j] // 行列の積の計算
+            }
+        }
+    }
+    return result
+}
+
+// 行列が等しいかを比較する関数
+func compareMatrices<T: BinaryFloatingPoint>(_ a: [[T]], _ b: [[T]], epsilon: T = 0.0001) -> Bool {
+    guard a.count == b.count, a[0].count == b[0].count else {
+        return false
+    }
+    for i in 0..<a.count {
+        for j in 0..<a[0].count {
+            let diff = abs(a[i][j] - b[i][j])
+            if diff > epsilon {
+                return false
+            }
+        }
+    }
+    return true
 }

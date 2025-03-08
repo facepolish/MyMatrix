@@ -88,3 +88,56 @@ func almostEqualVectorsAsArray<T:BinaryFloatingPoint> (_ a:[T],_ b:[T], epsilon:
     return false
 }
 
+func createRandomSparseMatrix(rows: Int, cols: Int, density: Double) -> SparseMatrix_Double {
+    var values: [Double] = []
+    var rowIndices: [Int32] = []
+    var colIndices: [Int32] = []
+
+    for j in 0..<cols {
+        for i in 0..<rows {
+            if Double.random(in: 0...1) < density {
+                values.append(Double.random(in: -1...1))
+                rowIndices.append(Int32(i))
+                colIndices.append(Int32(j))
+            }
+        }
+    }
+    let A = SparseConvertFromCoordinate(Int32(rows), Int32(cols),
+                                        values.count, 1,
+                                        SparseAttributes_t(),
+                                        rowIndices, colIndices,
+                                        values)
+
+    
+    return A
+}
+func createRondomVector(_ n:Int) -> [Double] {
+    var vec:[Double] = []
+    for i in 0..<n{
+        vec.append(Double.random(in: 0...1))
+    }
+    return vec
+}
+func convToSparse(_ a:[[Double]]) -> SparseMatrix_Double {
+    let row = a.count
+    let col = a[0].count
+    var colIndices:[Int32] = []
+    var rowIndices:[Int32] = []
+    var values:[Double] = []
+    
+    for i in 0..<row {
+        for j in 0..<col {
+            if a[i][j] != 0.0 {
+                rowIndices.append(Int32(i))
+                colIndices.append(Int32(j))
+                values.append(a[i][j])
+            }
+        }
+    }
+    let A = SparseConvertFromCoordinate(Int32(row), Int32(col),
+                                        values.count, 1,
+                                        SparseAttributes_t(),
+                                        rowIndices, colIndices,
+                                        values)
+    return A
+}

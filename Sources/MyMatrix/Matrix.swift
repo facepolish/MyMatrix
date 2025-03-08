@@ -356,3 +356,21 @@ func DGEMM(
     }
     return c
 }
+// 行列の逆行列を計算する関数
+func invert(matrix : [Double]) -> [Double] {
+    var inMatrix = matrix
+    // 行列のサイズを取得し、ローカル変数にコピー
+    var N = __CLPK_integer(sqrt(Double(matrix.count)))
+    var pivots = [__CLPK_integer](repeating: 0, count: Int(N))
+    // 作業領域としてのバッファを用意
+    var workspace = [Double](repeating: 0.0, count: Int(N))
+    var error : __CLPK_integer = 0
+
+    withUnsafeMutablePointer(to: &N) {
+        // LU分解を実行
+        dgetrf_($0, $0, &inMatrix, $0, &pivots, &error)
+        // 逆行列を計算
+        dgetri_($0, &inMatrix, $0, &pivots, &workspace, $0, &error)
+    }
+    return inMatrix
+}
