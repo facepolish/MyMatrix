@@ -312,9 +312,9 @@ struct Test4 {
         [-1, 1, -1, 1]
     ]
     @Test func testSVDcases() async throws{
-        testSVD(matrix)
-        testSVD(matrix2)
-        func testSVD(_ a: [[Double]]) {
+        try testSVD(matrix)
+        try testSVD(matrix2)
+        func testSVD(_ a: [[Double]]) throws {
             if let svdResult = SVD(matrix: a) {
                 print("左特異ベクトル行列U:")
                 svdResult.U.forEach { print($0) }
@@ -323,19 +323,18 @@ struct Test4 {
                 print("\n右特異ベクトル行列VT:")
                 svdResult.VT.forEach { print($0) }
                 
-                if let sMat = convSvaluetoMatrix(svdResult.S, row: a.count, col: a[0].count) {
-                    let m1 = matrixMultiply(svdResult.U, sMat)
-                    let m2 = matrixMultiply(m1, svdResult.VT)
-                    #expect(compareMatrices(m2, a) )
-                    if isOrthNormMatrix(svdResult.VT) {
-                        print("right matrix is OK")
-                    }
-                    if isOrthNormMatrix(svdResult.U) {
-                        print("left matrix is OK")
-                    }
+                let sMat = try #require(convSvaluetoMatrix(svdResult.S, row: a.count, col: a[0].count),"S matrix should not be nil")
+                let m1 = matrixMultiply(svdResult.U, sMat)
+                let m2 = matrixMultiply(m1, svdResult.VT)
+                #expect(compareMatrices(m2, a) )
+                if isOrthNormMatrix(svdResult.VT) {
+                    print("right matrix is OK")
+                }
+                if isOrthNormMatrix(svdResult.U) {
+                    print("left matrix is OK")
+                }
 
                 }
-            }
         }
     }
 }
@@ -364,21 +363,6 @@ func isOrthNormMatrix<T:BinaryFloatingPoint>(_ a:[[T]],epsilon:T = 0.0001) -> Bo
     return true
 }
 
-/*
-// 列主要形式の配列を二次元行列に変換する関数
-func colMajorToMatrix<T: BinaryFloatingPoint>(_ matrix: [T], row: Int, col: Int) -> [[T]]? {
-    guard row * col == matrix.count else {
-        return nil
-    }
-    var retMat = [[T]](repeating: [T](repeating: 0.0, count: col), count: row)
-    for i in 0..<row {
-        for j in 0..<col {
-            retMat[i][j] = matrix[i + j * row] // 行列のインデックスを修正
-        }
-    }
-    return retMat
-}
-*/
 // 行列の乗算を行う関数
 func matrixMultiply(_ a: [[Double]], _ b: [[Double]]) -> [[Double]] {
     let row = a.count
@@ -410,4 +394,22 @@ func compareMatrices<T: BinaryFloatingPoint>(_ a: [[T]], _ b: [[T]], epsilon: T 
         }
     }
     return true
+}
+struct testVector {
+    @Test func test1() async throws{
+        let vector1:[Double] = [1.0, 2.0, 3.0]
+        let vector2:[Double] = [2.0, 2.0, 2.0]
+        let vector3:[Double] = [3.0,3.0,3.0,3.0]
+        let vec1 = Vector(vector1)
+        let vec2 = Vector(vector2)
+        let vec3 = Vector(vector3)
+        let expectedSize:Double = 12
+        
+        let result = try vec1 * vec2
+        #expect(testAlmostEqual(result,expectedSize))
+        print (result)
+        #expect(throws:Errors.VectorSizeMismatch){
+            _ = try vec1 * vec3
+        }
+    }
 }
