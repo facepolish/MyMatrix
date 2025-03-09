@@ -113,7 +113,7 @@ func createRandomSparseMatrix(rows: Int, cols: Int, density: Double) -> SparseMa
 }
 func createRondomVector(_ n:Int) -> [Double] {
     var vec:[Double] = []
-    for i in 0..<n{
+    for _ in 0..<n{
         vec.append(Double.random(in: 0...1))
     }
     return vec

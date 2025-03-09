@@ -374,3 +374,81 @@ func invert(matrix : [Double]) -> [Double] {
     }
     return inMatrix
 }
+func convSvaluetoMatrix<T: BinaryFloatingPoint>(_ s: [T], row: Int, col: Int) -> [[T]]? {
+    guard s.count <= row && s.count <= col else {
+        return nil
+    }
+    var retMatrix = [[T]](repeating: [T](repeating: 0.0, count: col), count: row)
+    for i in s.indices {
+        retMatrix[i][i] = s[i]
+    }
+    return retMatrix
+}
+
+func flattenMatrixColMajor<T: BinaryFloatingPoint>(_ matrix: [[T]]) -> [T] {
+    let row = matrix.count
+    let col = matrix[0].count
+    var flattened: [T] = []
+    for j in 0..<col {
+        for i in 0..<row {
+            flattened.append(matrix[i][j]) // 列優先でパック
+        }
+    }
+    return flattened
+}
+func colMajorToMatrix<T: BinaryFloatingPoint>(_ matrix: [T], row: Int, col: Int) -> [[T]]? {
+    guard row * col == matrix.count else {
+        return nil
+    }
+    var retMat = [[T]](repeating: [T](repeating: 0.0, count: col), count: row)
+    for i in 0..<row {
+        for j in 0..<col {
+            retMat[i][j] = matrix[i + j * row]
+        }
+    }
+    return retMat
+}
+
+func SVD(matrix: [[Double]]) -> (U: [[Double]], S: [Double], VT: [[Double]])? {
+    var m = Int32(matrix.count)
+    var n = Int32(matrix[0].count)
+    
+    // 行列を列優先(column-major)形式に変換
+    var columnMajorA = flattenMatrixColMajor(matrix)
+    var jobu = Int8("A".utf8.first!) // 全左特異ベクトルを計算
+    var jobvt = Int8("A".utf8.first!) // 全右特異ベクトルを計算
+    var s = [Double](repeating: 0, count: Int(min(m, n)))
+    
+    var lda = m
+    var ldu = m
+    var ldvt = n
+    var negative = Int32(-1)
+    
+    // ワークスペースサイズの問い合わせ
+    var workSize: Double = 0
+    var info: Int32 = 0
+    dgesvd_(&jobu, &jobvt, &m, &n, nil, &lda, nil, nil, &ldu, nil, &ldvt, &workSize, &negative, &info)
+    
+    // ワークスペースの確保
+    var lwork = Int32(workSize)
+    var work = [Double](repeating: 0, count: Int(lwork))
+    
+    // 出力用配列
+    var U = [Double](repeating: 0, count: Int(m * m))
+    var VT = [Double](repeating: 0, count: Int(n * n))
+    
+    // SVD計算実行
+    dgesvd_(&jobu, &jobvt, &m, &n, &columnMajorA, &lda, &s,
+                &U, &ldu, &VT, &ldvt, &work, &lwork, &info)
+    guard info == 0 else {
+        print("SVD計算失敗 (info=\(info))")
+        return nil
+    }
+    
+    // 列優先から行優先(row-major)に変換
+    if let UMatrix = colMajorToMatrix(U, row: Int(m), col: Int(m)),
+       let VTMatrix = colMajorToMatrix(VT, row: Int(n), col: Int(n)) {
+        return (UMatrix, s, VTMatrix)
+    }
+    return nil
+}

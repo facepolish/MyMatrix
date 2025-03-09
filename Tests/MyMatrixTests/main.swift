@@ -300,8 +300,71 @@ struct Test4 {
         // 行列が等しいかを比較
         #expect (compareMatrices(ret, II) )
     }
+    let matrix: [[Double]] = [
+        [1.0, 2.0, 3.0],
+        [4.0, 5.0, 6.0],
+        [7.0, 8.0, 9.0]
+    ]
+
+    let matrix2: [[Double]] = [
+        [2.0, 2.0, 2.0, 2.0],
+        [1.0, -1.0, 1.0, -1.0],
+        [-1, 1, -1, 1]
+    ]
+    @Test func testSVDcases() async throws{
+        testSVD(matrix)
+        testSVD(matrix2)
+        func testSVD(_ a: [[Double]]) {
+            if let svdResult = SVD(matrix: a) {
+                print("左特異ベクトル行列U:")
+                svdResult.U.forEach { print($0) }
+                print("\n特異値:")
+                print(svdResult.S)
+                print("\n右特異ベクトル行列VT:")
+                svdResult.VT.forEach { print($0) }
+                
+                if let sMat = convSvaluetoMatrix(svdResult.S, row: a.count, col: a[0].count) {
+                    let m1 = matrixMultiply(svdResult.U, sMat)
+                    let m2 = matrixMultiply(m1, svdResult.VT)
+                    #expect(compareMatrices(m2, a) )
+                    if isOrthNormMatrix(svdResult.VT) {
+                        print("right matrix is OK")
+                    }
+                    if isOrthNormMatrix(svdResult.U) {
+                        print("left matrix is OK")
+                    }
+
+                }
+            }
+        }
+    }
+}
+func isOrthNormMatrix<T:BinaryFloatingPoint>(_ a:[[T]],epsilon:T = 0.0001) -> Bool {
+    let row = a.count
+    let col = a[0].count
+    guard row == col else {return false}
+    let n = row
+    for i in 0..<n {
+        for j in 0..<n {
+            var val:T = 0.0
+            for k in 0..<n{
+                val += a[i][k] * a[k][j]
+            }
+            if i == j {
+                if abs(1.0 - val) > epsilon {
+                    return false
+                }
+            } else {
+                if abs(val) > epsilon{
+                    return false
+                }
+            }
+        }
+    }
+    return true
 }
 
+/*
 // 列主要形式の配列を二次元行列に変換する関数
 func colMajorToMatrix<T: BinaryFloatingPoint>(_ matrix: [T], row: Int, col: Int) -> [[T]]? {
     guard row * col == matrix.count else {
@@ -315,7 +378,7 @@ func colMajorToMatrix<T: BinaryFloatingPoint>(_ matrix: [T], row: Int, col: Int)
     }
     return retMat
 }
-
+*/
 // 行列の乗算を行う関数
 func matrixMultiply(_ a: [[Double]], _ b: [[Double]]) -> [[Double]] {
     let row = a.count
